@@ -41,8 +41,10 @@ test: (bits[i >> 3] >> (i & 7)) & 1
 6. Reject if empty, has no `.`, or contains characters outside `[a-z0-9.-]`.
 
 The generator stores the registrable/blocked domain. The **client** tests the host AND
-its parent domains (walking left-label-stripping down to 2 labels), so a stored
-`example.com` also matches `cdn.example.com`.
+its parent domains down to (and including) the registrable domain (eTLD+1) — never a
+bare public suffix — so a stored `example.com` also matches `cdn.example.com`, but a
+single blocked tenant never paints every sibling under a shared suffix. IP-literal
+hosts are skipped entirely.
 
 ## Hashing (double hashing, Kirsch–Mitzenmacher)
 
@@ -71,14 +73,15 @@ JS `Number` arithmetic (no BigInt) and still match Python's exact integer math.
 
 ## Sizing (generator side)
 
-Given `n` domains and target false-positive rate `p` (default `p = 0.005`):
+Given `n` domains and target false-positive rate `p` (default `p = 0.001`):
 
 ```
 m = ceil(-n * ln(p) / (ln 2)^2)     rounded up to a multiple of 8
 k = max(1, round((m / n) * ln 2))
 ```
 
-At `p = 0.005` this is ≈ 11.03 bits/element and `k = 8`.
+At `p = 0.001` this is ≈ 14.38 bits/element and `k = 10`. The client reads `m` and `k`
+from the header, so `p` (and the file size) can change without a client update.
 
 ## Membership semantics
 

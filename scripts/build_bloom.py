@@ -22,7 +22,7 @@ import urllib.request
 ANTIZAPRET_URL = "https://antizapret.prostovpn.org/domains-export.txt"
 ZI_URL = "https://raw.githubusercontent.com/zapret-info/z-i/master/dump.csv.gz"
 
-TARGET_FPR = 0.005  # 0.5%
+TARGET_FPR = 0.001  # 0.1% — keeps the client's compounded false-positive rate low
 USER_AGENT = "obfsn-bloom-builder/1 (+https://github.com/bymakk/obfsnproxy)"
 OUT_PATH = os.path.join("dist", "rkn.bloom")
 
