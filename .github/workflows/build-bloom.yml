@@ -1,0 +1,53 @@
+name: Build RKN Bloom Filter
+
+# Daily rebuild of dist/rkn.bloom, published to a stable "latest" release tag so the
+# public download URL never changes:
+#   https://github.com/bymakk/obfsnproxy/releases/latest/download/rkn.bloom
+on:
+  schedule:
+    - cron: "17 3 * * *" # every day at 03:17 UTC
+  workflow_dispatch: {} # manual run button
+
+# Least-privilege: only release/tag/contents writes are needed.
+permissions:
+  contents: write
+
+# Don't let two runs race on the same "latest" tag.
+concurrency:
+  group: build-bloom
+  cancel-in-progress: false
+
+jobs:
+  build-bloom:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+
+      - name: Build bloom filter
+        run: |
+          mkdir -p dist
+          python scripts/build_bloom.py
+          test -f dist/rkn.bloom
+
+      - name: Publish to "latest" release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Re-point the "latest" tag at this commit and replace the asset.
+          gh release delete latest --yes --cleanup-tag || true
+          gh release create latest dist/rkn.bloom \
+            --title "latest" \
+            --notes "Automated RKN bloom filter build ($(date -u +%Y-%m-%dT%H:%M:%SZ))" \
+            --target "$GITHUB_SHA" \
+            --latest
